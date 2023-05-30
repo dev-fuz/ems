@@ -1,0 +1,63 @@
+version: "3.7"
+services:
+  app:
+    build:
+      args:
+        user: zrshishir
+        uid: 1000
+      context: ./
+      dockerfile: Dockerfile
+    image: ems
+    container_name: ems-app
+    restart: unless-stopped
+    working_dir: /var/www/
+    volumes:
+      - ./:/var/www
+    networks:
+      - ems-network
+  db:
+    container_name: ems-db
+    image: mariadb:10.6
+    volumes:
+      - './docker-compose/mysql:/var/lib/mysql'
+    ports:
+      - 18766:3306
+    restart: always
+    environment:
+      MYSQL_USER: root
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: ems
+      MYSQL_PASSWORD: ems_password
+
+    networks:
+      - ems-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: ems-nginx
+    restart: unless-stopped
+    ports:
+      - 8000:80
+    volumes:
+      - ./:/var/www
+      - ./docker-compose/nginx:/etc/nginx/conf.d/
+    networks:
+      - ems-network
+
+  phpmyadmin:
+    container_name: ems-phpmyadmin
+    depends_on:
+      - db
+    image: phpmyadmin
+    restart: always
+    ports:
+      - 8181:80
+    environment:
+      PMA_HOST: db:3306
+      MYSQL_ROOT_PASSWORD: password
+    networks:
+      - ems-network
+
+networks:
+  ems-network:
+    driver: bridge
